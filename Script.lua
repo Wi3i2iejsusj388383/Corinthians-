@@ -1,160 +1,81 @@
 --[[ 
-    PORCK HUB - Free Fire Style
+    Painel Axius- Free Fire Style (Rayfield UI)
     - ESP: Box vermelho + vida verde + tracer
     - Aimbot: OTIMIZADO PARA ARSENAL/RIVAIS/ETC
     - SKYBOX: 107018829993006
-    - Interface: Minimalista tipo hack FF
+    - Interface: Rayfield UI organizada em abas
 --]]
 
+-- Carregar biblioteca Rayfield
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- Serviços e variáveis base
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
+-- Configurações principais
 local Settings = {
     ESP = false,
     Aimbot = false,
-    AimbotSpeed = 0.25, -- Velocidade do aimbot (aumentado para Arsenal)
+    AimbotSpeed = 0.25,
     FOV_Radius = 250,
     BoxColor = Color3.fromRGB(255, 0, 0),
     TracerColor = Color3.fromRGB(255, 255, 255),
+    SkyboxAtivo = false
 }
 
 local SKYBOX_ID = 107018829993006
 
--- ================== SKYBOX ==================
+-- ================== FUNÇÕES BASE ==================
 
+-- Aplicar/remover Skybox
 local function ApplySkybox()
     local oldSky = workspace:FindFirstChild("Sky")
     if oldSky then oldSky:Destroy() end
     
-    local sky = Instance.new("Sky")
-    sky.Parent = workspace
-    sky.SkyboxBk = "rbxassetid://" .. SKYBOX_ID
-    sky.SkyboxDn = "rbxassetid://" .. SKYBOX_ID
-    sky.SkyboxFt = "rbxassetid://" .. SKYBOX_ID
-    sky.SkyboxLf = "rbxassetid://" .. SKYBOX_ID
-    sky.SkyboxRt = "rbxassetid://" .. SKYBOX_ID
-    sky.SkyboxUp = "rbxassetid://" .. SKYBOX_ID
-    sky.StarCount = 0
-end
-
--- ================== UI ==================
-
-local ScreenGui = Instance.new("ScreenGui")
-pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
-if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
-
--- MAIN FRAME
-local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0, 200, 0, 180)
-MainFrame.Position = UDim2.new(0, 20, 0.5, -90)
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-MainFrame.BorderSizePixel = 2
-MainFrame.BorderColor3 = Color3.fromRGB(255, 100, 0)
-MainFrame.Active = true
-MainFrame.Draggable = true
-
--- PADDING
-local Padding = Instance.new("UIPadding", MainFrame)
-Padding.PaddingTop = UDim.new(0, 10)
-Padding.PaddingLeft = UDim.new(0, 10)
-Padding.PaddingRight = UDim.new(0, 10)
-Padding.PaddingBottom = UDim.new(0, 10)
-
--- LAYOUT
-local MainLayout = Instance.new("UIListLayout", MainFrame)
-MainLayout.Padding = UDim.new(0, 10)
-MainLayout.FillDirection = Enum.FillDirection.Vertical
-
--- ================== TÍTULO ==================
-
-local TitleLabel = Instance.new("TextLabel", MainFrame)
-TitleLabel.Size = UDim2.new(1, 0, 0, 25)
-TitleLabel.Text = "PORCK HUB"
-TitleLabel.TextColor3 = Color3.fromRGB(255, 100, 0)
-TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.TextSize = 16
-TitleLabel.BackgroundTransparency = 1
-TitleLabel.BorderSizePixel = 0
-
--- ================== FUNÇÃO: CRIAR BOTÃO ==================
-
-local function CreateButton(parent, name, callback)
-    local Button = Instance.new("TextButton", parent)
-    Button.Size = UDim2.new(1, 0, 0, 35)
-    Button.Text = name
-    Button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Button.Font = Enum.Font.GothamBold
-    Button.TextSize = 12
-    Button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    Button.BorderSizePixel = 1
-    Button.BorderColor3 = Color3.fromRGB(100, 100, 100)
-    
-    local isActive = false
-    
-    Button.MouseButton1Click:Connect(function()
-        isActive = not isActive
-        callback(isActive)
-        
-        if isActive then
-            Button.BackgroundColor3 = Color3.fromRGB(255, 100, 0)
-            Button.TextColor3 = Color3.fromRGB(0, 0, 0)
-        else
-            Button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-            Button.TextColor3 = Color3.fromRGB(255, 255, 255)
-        end
-    end)
-    
-    return Button
-end
-
--- ================== BOTÕES ==================
-
-CreateButton(MainFrame, "ESP", function(v) Settings.ESP = v end)
-CreateButton(MainFrame, "AIMBOT", function(v) Settings.Aimbot = v end)
-CreateButton(MainFrame, "SKYBOX", function(v) 
-    if v then
-        ApplySkybox()
+    if Settings.SkyboxAtivo then
+        local sky = Instance.new("Sky")
+        sky.Parent = workspace
+        sky.SkyboxBk = "rbxassetid://" .. SKYBOX_ID
+        sky.SkyboxDn = "rbxassetid://" .. SKYBOX_ID
+        sky.SkyboxFt = "rbxassetid://" .. SKYBOX_ID
+        sky.SkyboxLf = "rbxassetid://" .. SKYBOX_ID
+        sky.SkyboxRt = "rbxassetid://" .. SKYBOX_ID
+        sky.SkyboxUp = "rbxassetid://" .. SKYBOX_ID
+        sky.StarCount = 0
+        Rayfield:Notify({Title = "Skybox", Content = "Aplicado com sucesso!", Duration = 2, Image = "check"})
     else
-        local oldSky = workspace:FindFirstChild("Sky")
-        if oldSky then oldSky:Destroy() end
+        Rayfield:Notify({Title = "Skybox", Content = "Restaurado ao padrão!", Duration = 2, Image = "x"})
     end
-end)
+end
 
--- ================== FOV CIRCLE ==================
-
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Thickness = 2
-FOVCircle.Color = Settings.BoxColor
-FOVCircle.Filled = false
-FOVCircle.Visible = false
-
--- ================== WALL CHECK ==================
-
+-- Verificar se parte é visível
 local function IsVisible(part)
     local ray = Ray.new(Camera.CFrame.Position, (part.Position - Camera.CFrame.Position).Unit * 1000)
     local hit = workspace:FindPartOnRayWithIgnoreList(ray, {LocalPlayer.Character, Camera})
     return hit and hit:IsDescendantOf(part.Parent)
 end
 
--- ================== DETECT ENEMY ==================
-
+-- Verificar se jogador é inimigo
 local function IsEnemy(player)
     if player == LocalPlayer then return false end
-    
     local playerTeam = player.Team
     local myTeam = LocalPlayer.Team
-    
-    -- Se não tem time, é inimigo
-    if not playerTeam or not myTeam then return true end
-    
-    -- Se times diferentes, é inimigo
-    return playerTeam ~= myTeam
+    return (not playerTeam or not myTeam) or (playerTeam ~= myTeam)
 end
 
--- ================== ESP ==================
+-- ================== ELEMENTOS GRÁFICOS ==================
 
+-- Círculo FOV
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Thickness = 2
+FOVCircle.Color = Settings.BoxColor
+FOVCircle.Filled = false
+FOVCircle.Visible = false
+
+-- Sistema ESP
 local function ApplyESP(player)
     local Box = Drawing.new("Square")
     Box.Filled = false
@@ -203,13 +124,15 @@ local function ApplyESP(player)
     end)
 end
 
--- ================== AIMBOT (AUTOMÁTICO) ==================
-
+-- Sistema Aimbot
 RunService.RenderStepped:Connect(function()
+    -- Atualizar FOV Circle
     FOVCircle.Visible = Settings.Aimbot
     FOVCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
     FOVCircle.Radius = Settings.FOV_Radius
+    FOVCircle.Color = Settings.BoxColor
 
+    -- Lógica do Aimbot
     if Settings.Aimbot then
         local target = nil
         local dist = Settings.FOV_Radius
@@ -242,12 +165,124 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- ================== APLICAR ESP ==================
-
+-- Aplicar ESP para jogadores existentes e novos
 for _, p in pairs(Players:GetPlayers()) do
     ApplyESP(p)
 end
-
 Players.PlayerAdded:Connect(ApplyESP)
 
-print("✓ PORCK HUB - Arsenal/Rivais Edition Carregado!")
+-- ================== RAYFIELD UI ==================
+
+-- Criar janela principal
+local Window = Rayfield:CreateWindow({
+    Name = "Painel Axius",
+    Icon = "crosshair",
+    LoadingTitle = "Painel Axius",
+    LoadingSubtitle = "Arsenal/Rivais Edition",
+    ShowText = "AXIUS",
+    Theme = "DarkBlue",
+    ToggleUIKeybind = "K",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "PainelAxius",
+        FileName = "Config"
+    }
+})
+
+-- Aba 1: Aimbot
+local TabAimbot = Window:CreateTab("Aimbot", "target")
+TabAimbot:CreateSection("Configurações")
+
+-- Toggle Aimbot
+TabAimbot:CreateToggle({
+    Name = "Ativar Aimbot",
+    CurrentValue = false,
+    Flag = "AimbotToggle",
+    Callback = function(Value)
+        Settings.Aimbot = Value
+        local msg = Value and "Aimbot ativado!" or "Aimbot desativado!"
+        Rayfield:Notify({Title = "Aimbot", Content = msg, Duration = 2, Image = Value and "check" or "x"})
+    end
+})
+
+-- Slider Velocidade
+TabAimbot:CreateSlider({
+    Name = "Velocidade do Aimbot",
+    Range = {0.05, 1},
+    Increment = 0.05,
+    Suffix = "x",
+    CurrentValue = 0.25,
+    Flag = "AimbotSpeedSlider",
+    Callback = function(Value)
+        Settings.AimbotSpeed = Value
+    end
+})
+
+-- Slider Raio FOV
+TabAimbot:CreateSlider({
+    Name = "Raio do FOV",
+    Range = {50, 500},
+    Increment = 10,
+    Suffix = "px",
+    CurrentValue = 250,
+    Flag = "FOVRadiusSlider",
+    Callback = function(Value)
+        Settings.FOV_Radius = Value
+    end
+})
+
+-- Aba 2: Visual (ESP)
+local TabVisual = Window:CreateTab("Visual (ESP)", "eye")
+TabVisual:CreateSection("ESP")
+
+-- Toggle ESP
+TabVisual:CreateToggle({
+    Name = "Ativar ESP",
+    CurrentValue = false,
+    Flag = "ESPToggle",
+    Callback = function(Value)
+        Settings.ESP = Value
+        local msg = Value and "ESP ativado!" or "ESP desativado!"
+        Rayfield:Notify({Title = "ESP", Content = msg, Duration = 2, Image = Value and "check" or "x"})
+    end
+})
+
+-- Seletor cor do Box
+TabVisual:CreateColorPicker({
+    Name = "Cor do Box ESP",
+    Color = Color3.fromRGB(255, 0, 0),
+    Flag = "BoxColorPicker",
+    Callback = function(Color)
+        Settings.BoxColor = Color
+        FOVCircle.Color = Color
+    end
+})
+
+-- Seletor cor do Tracer
+TabVisual:CreateColorPicker({
+    Name = "Cor do Tracer",
+    Color = Color3.fromRGB(255, 255, 255),
+    Flag = "TracerColorPicker",
+    Callback = function(Color)
+        Settings.TracerColor = Color
+    end
+})
+
+-- Seção Skybox
+TabVisual:CreateSection("Skybox")
+
+-- Toggle Skybox
+TabVisual:CreateToggle({
+    Name = "Ativar Skybox Custom",
+    CurrentValue = false,
+    Flag = "SkyboxToggle",
+    Callback = function(Value)
+        Settings.SkyboxAtivo = Value
+        ApplySkybox()
+    end
+})
+
+-- Carregar configurações salvas
+Rayfield:LoadConfiguration()
+
+print("✓ PAINEL AXIUS- Arsenal/Rivais Edition Carregado!")
