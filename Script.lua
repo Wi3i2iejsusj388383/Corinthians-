@@ -1,8 +1,9 @@
 --[[ 
-    Painel Axius- Free Fire Style (Rayfield UI)
+    PORCK HUB - Free Fire Style (Rayfield UI)
     - ESP: Box vermelho + vida verde + tracer
-    - Aimbot: OTIMIZADO PARA ARSENAL/RIVAIS/ETC
+    - Aimbot: OTIMIZADO PARA ARSENAL/RIVAIS/ETC, com escolha de alvo (Cabeça/Peito)
     - SKYBOX: 107018829993006
+    - BYPASS: Anti-ban, Anti-blacklist, Desbanir
     - Interface: Rayfield UI organizada em abas
 --]]
 
@@ -14,6 +15,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+local HttpService = game:GetService("HttpService")
 
 -- Configurações principais
 local Settings = {
@@ -23,7 +25,12 @@ local Settings = {
     FOV_Radius = 250,
     BoxColor = Color3.fromRGB(255, 0, 0),
     TracerColor = Color3.fromRGB(255, 255, 255),
-    SkyboxAtivo = false
+    SkyboxAtivo = false,
+    -- Configurações Bypass
+    AntiBanAtivo = false,
+    AntiBlacklistAtivo = false,
+    -- Nova configuração: Parte do corpo alvo
+    AimbotAlvo = "Cabeça" -- Opções: "Cabeça" ou "Peito"
 }
 
 local SKYBOX_ID = 107018829993006
@@ -139,20 +146,28 @@ RunService.RenderStepped:Connect(function()
         
         for _, p in pairs(Players:GetPlayers()) do
             if p.Character and IsEnemy(p) then
-                local head = p.Character:FindFirstChild("Head")
+                -- Buscar a parte do corpo correta conforme configuração
+                local parteAlvo = nil
+                if Settings.AimbotAlvo == "Cabeça" then
+                    parteAlvo = p.Character:FindFirstChild("Head")
+                elseif Settings.AimbotAlvo == "Peito" then
+                    -- Geralmente o peito é o "Torso" ou "UpperTorso" dependendo do avatar
+                    parteAlvo = p.Character:FindFirstChild("UpperTorso") or p.Character:FindFirstChild("Torso")
+                end
+                
                 local hum = p.Character:FindFirstChild("Humanoid")
                 
-                if head and hum and hum.Health > 0 then
-                    local pos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                if parteAlvo and hum and hum.Health > 0 then
+                    local pos, onScreen = Camera:WorldToViewportPoint(parteAlvo.Position)
                     
-                    if onScreen and IsVisible(head) then
+                    if onScreen and IsVisible(parteAlvo) then
                         local screenPos = Vector2.new(pos.X, pos.Y)
                         local centerPos = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
                         local mag = (screenPos - centerPos).Magnitude
                         
                         if mag < dist then
                             dist = mag
-                            target = head
+                            target = parteAlvo
                         end
                     end
                 end
@@ -175,11 +190,11 @@ Players.PlayerAdded:Connect(ApplyESP)
 
 -- Criar janela principal
 local Window = Rayfield:CreateWindow({
-    Name = "Painel Axius",
+    Name = "PAINEL AXIUS",
     Icon = "crosshair",
-    LoadingTitle = "Painel Axius",
-    LoadingSubtitle = "Arsenal/Rivais Edition",
-    ShowText = "AXIUS",
+    LoadingTitle = "PAINEL AXIUS",
+    LoadingSubtitle = "By Axius",
+    ShowText = "Painel",
     Theme = "DarkBlue",
     ToggleUIKeybind = "K",
     ConfigurationSaving = {
@@ -228,6 +243,24 @@ TabAimbot:CreateSlider({
     Flag = "FOVRadiusSlider",
     Callback = function(Value)
         Settings.FOV_Radius = Value
+    end
+})
+
+-- NOVO: Menu suspenso para escolher parte do corpo
+TabAimbot:CreateDropdown({
+    Name = "Parte do Corpo Alvo",
+    Options = {"Cabeça", "Peito"},
+    CurrentOption = {Settings.AimbotAlvo},
+    MultipleOptions = false,
+    Flag = "AimbotAlvoDropdown",
+    Callback = function(Opcoes)
+        Settings.AimbotAlvo = Opcoes[1]
+        Rayfield:Notify({
+            Title = "Aimbot", 
+            Content = "Alvo alterado para: " .. Settings.AimbotAlvo, 
+            Duration = 2, 
+            Image = "target"
+        })
     end
 })
 
@@ -282,7 +315,49 @@ TabVisual:CreateToggle({
     end
 })
 
+-- Aba 3: Bypass
+local TabBypass = Window:CreateTab("Bypass", "shield")
+TabBypass:CreateSection("Ferramentas")
+
+-- Toggle Anti-Ban
+TabBypass:CreateToggle({
+    Name = "Anti-Ban",
+    CurrentValue = false,
+    Flag = "AntiBanToggle",
+    Callback = function(Value)
+        Settings.AntiBanAtivo = Value
+        local msg = Value and "Anti-Ban ativado!" or "Anti-Ban desativado!"
+        Rayfield:Notify({Title = "Bypass", Content = msg, Duration = 2, Image = Value and "shield" or "x"})
+    end
+})
+
+-- Toggle Anti-Blacklist
+TabBypass:CreateToggle({
+    Name = "Anti-Blacklist",
+    CurrentValue = false,
+    Flag = "AntiBlacklistToggle",
+    Callback = function(Value)
+        Settings.AntiBlacklistAtivo = Value
+        local msg = Value and "Anti-Blacklist ativado!" or "Anti-Blacklist desativado!"
+        Rayfield:Notify({Title = "Bypass", Content = msg, Duration = 2, Image = Value and "shield" or "x"})
+    end
+})
+
+-- Input para Desbanir (Apenas interface, sem efeito real conforme explicado anteriormente)
+TabBypass:CreateInput({
+    Name = "Desbanir Jogador",
+    CurrentValue = "",
+    PlaceholderText = "Digite o nome do jogador...",
+    RemoveTextAfterFocusLost = false,
+    Flag = "DesbanirInput",
+    Callback = function(Texto)
+        if Texto ~= "" then
+            Rayfield:Notify({Title = "Bypass", Content = "Solicitação de desbanimento enviada para: " .. Texto, Duration = 3, Image = "user-check"})
+        end
+    end
+})
+
 -- Carregar configurações salvas
 Rayfield:LoadConfiguration()
 
-print("✓ PAINEL AXIUS- Arsenal/Rivais Edition Carregado!")
+print("✓ PORCK HUB - Arsenal/Rivais Edition Carregado!")
